@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOS RASTINA - Buku Nota & Pengingat Tugasan</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#EAB308">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FEFCE8; color: #1E293B; }
+    .notebook-paper {
+      background-color: #FFFFFF;
+      background-image: linear-gradient(#F1F5F9 1px, transparent 1px);
+      background-size: 100% 2.2rem;
+      border-left: 4px solid #EF4444;
+    }
+    .btn-bounce:active { transform: scale(0.95); }
+    .custom-shadow { box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.25), 0 8px 10px -6px rgba(234, 179, 8, 0.1); }
+  </style>
+</head>
+<body class="min-h-screen pb-12">
+  <div class="max-w-3xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-3xl p-6 text-slate-900 custom-shadow mb-6 relative overflow-hidden">
+      <div class="flex justify-between items-center relative z-10">
+        <div>
+          <span class="inline-block bg-slate-900 text-yellow-300 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-2">
+            👑 SELAMAT DATANG
+          </span>
+          <h1 class="text-3xl font-extrabold tracking-tight">BOS RASTINA</h1>
+          <p id="greetingTime" class="text-slate-800 font-medium text-sm mt-1"></p>
+        </div>
+        <div class="w-16 h-16 bg-white/30 backdrop-blur border-2 border-white rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+          👑
+        </div>
+      </div>
+    </header>
+
+    <!-- Daily Quotes MYS -->
+    <section class="bg-white rounded-2xl p-5 border-2 border-yellow-200 custom-shadow mb-6">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg flex items-center gap-1">
+          <i class="fa-solid fa-quote-left"></i> MOTIVASI HARIAN (MYS)
+        </span>
+        <button onclick="readQuote()" class="text-slate-400 hover:text-amber-500 text-sm p-1" title="Dengar">
+          <i class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+      <p id="quoteText" class="text-slate-700 italic font-medium text-base md:text-lg"></p>
+    </section>
+
+    <!-- Task Form -->
+    <section class="bg-white rounded-2xl p-6 border-2 border-yellow-300 custom-shadow mb-8">
+      <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-amber-500"></i> Catat Pekerjaan Baru
+      </h2>
+      <form id="taskForm" onsubmit="saveTask(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tajuk Pekerjaan</label>
+          <input type="text" id="taskTitle" required placeholder="Contoh: Buat Lesen" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Deskripsi Pekerjaan</label>
+          <textarea id="taskDesc" rows="3" placeholder="Masukkan butiran terperinci tugasan..." class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none transition"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status Pekerjaan</label>
+          <select id="taskStatus" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none font-semibold">
+            <option value="BELUM SIAP">🔴 BELUM SIAP</option>
+            <option value="SIAP">🟢 SIAP</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-3.5 rounded-xl transition btn-bounce custom-shadow flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus-circle"></i> Simpan Ke Buku Nota
+        </button>
+      </form>
+    </section>
+
+    <!-- Task List / Notebook -->
+    <section>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-book text-amber-500"></i> Buku Nota Pekerjaan
+        </h2>
+        <span id="taskCount" class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">0 Tugasan</span>
+      </div>
+
+      <div id="taskList" class="space-y-4">
+        <!-- Dynamic Tasks Render Here -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Delete Modal -->
+  <div id="deleteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full custom-shadow text-center">
+      <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Padam Pekerjaan?</h3>
+      <p class="text-slate-500 text-sm mb-6">Adakah Bos Rastina pasti mahu memadam catatan pekerjaan ini?</p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">Batal</button>
+        <button id="confirmDeleteBtn" class="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl shadow-lg">Ya, Padam</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const quotes = [
+      "Setiap langkah kecil membawamu lebih dekat kepada kejayaan besar, Bos Rastina!",
+      "Fokus pada proses, hasil indah sedang menanti usaha Bos Rastina.",
+      "Tiada halangan yang terlalu besar jika kita mulakan dengan senyuman hari ini.",
+      "Kerja keras hari ini adalah kesenangan untuk masa depan Bos Rastina.",
+      "Kekal semangat Bos Rastina! Rezeki tidak pernah tersalah alamat."
+    ];
+
+    let tasks = JSON.parse(localStorage.getItem('rastina_tasks')) || [];
+    let deleteTargetId = null;
+
+    function init() {
+      updateGreeting();
+      setDailyQuote();
+      renderTasks();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+    }
+
+    function updateGreeting() {
+      const now = new Date();
+      const hrs = now.getHours();
+      let greeting = 'Selamat Hari';
+      if (hrs < 12) greeting = 'Selamat Pagi ☀️';
+      else if (hrs < 15) greeting = 'Selamat Tengah Hari 🌤️';
+      else if (hrs < 19) greeting = 'Selamat Petang 🌅';
+      else greeting = 'Selamat Malam 🌙';
+      
+      document.getElementById('greetingTime').innerText = `${greeting} | Waktu Malaysia: ${now.toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'})}`;
+    }
+
+    function setDailyQuote() {
+      const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+      const quote = quotes[dayOfYear % quotes.length];
+      document.getElementById('quoteText').innerText = `"${quote}"`;
+    }
+
+    function readQuote() {
+      const txt = document.getElementById('quoteText').innerText;
+      const ut = new SpeechSynthesisUtterance(txt);
+      ut.lang = 'ms-MY';
+      window.speechSynthesis.speak(ut);
+    }
+
+    function saveTask(e) {
+      e.preventDefault();
+      const title = document.getElementById('taskTitle').value.trim();
+      const desc = document.getElementById('taskDesc').value.trim();
+      const status = document.getElementById('taskStatus').value;
+
+      if (!title) return;
+
+      const newTask = {
+        id: Date.now(),
+        title,
+        desc,
+        status,
+        date: new Date().toLocaleDateString('ms-MY')
+      };
+
+      tasks.unshift(newTask);
+      localStorage.setItem('rastina_tasks', JSON.stringify(tasks));
+      document.getElementById('taskForm').reset();
+      renderTasks();
+    }
+
+    function toggleStatus(id) {
+      tasks = tasks.map(t => {
+        if (t.id === id) {
+          const nextStatus = t.status === 'SIAP' ? 'BELUM SIAP' : 'SIAP';
+          if (nextStatus === 'SIAP') confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+          return { ...t, status: nextStatus };
+        }
+        return t;
+      });
+      localStorage.setItem('rastina_tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    function openDeleteModal(id) {
+      deleteTargetId = id;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+    }
+
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+      if (deleteTargetId) {
+        tasks = tasks.filter(t => t.id !== deleteTargetId);
+        localStorage.setItem('rastina_tasks', JSON.stringify(tasks));
+        renderTasks();
+        closeDeleteModal();
+      }
+    };
+
+    function renderTasks() {
+      const container = document.getElementById('taskList');
+      document.getElementById('taskCount').innerText = `${tasks.length} Catatan`;
+
+      if (tasks.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border-2 border-dashed border-amber-200">
+            <p class="text-slate-400 font-semibold">Belum ada catatan pekerjaan. Sila tambah di atas!</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = tasks.map(t => `
+        <div class="notebook-paper rounded-2xl p-5 border border-slate-200 custom-shadow transition hover:border-yellow-400 relative">
+          <div class="flex justify-between items-start gap-3">
+            <div class="flex-1">
+              <span class="text-[11px] font-bold tracking-wider text-slate-400 mb-1 block">${t.date}</span>
+              <h3 class="text-lg font-bold ${t.status === 'SIAP' ? 'line-through text-slate-400' : 'text-slate-800'}">${t.title}</h3>
+              ${t.desc ? `<p class="text-slate-600 text-sm mt-1 whitespace-pre-line">${t.desc}</p>` : ''}
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <button onclick="toggleStatus(${t.id})" class="px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
+                t.status === 'SIAP' 
+                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                : 'bg-red-100 text-red-700 hover:bg-red-200'
+              }">
+                ${t.status === 'SIAP' ? '🟢 SIAP' : '🔴 BELUM SIAP'}
+              </button>
+              <button onclick="openDeleteModal(${t.id})" class="text-slate-300 hover:text-red-500 p-1 text-sm transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
